@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดคู่แบดมินตัน (B&B)</title>
+    <title>ระบบจัดคู่แบดมินตัน (Final Version)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        /* --- General Styles --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 10px; }
         .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h1, h2, h3, h4 { color: #2c3e50; }
-        h1 { text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        h1 { text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; font-size: 2em; }
         .section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fdfdfd; }
         .form-group { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
         input[type="text"], input[type="number"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
@@ -24,45 +25,170 @@
         .btn-danger:hover { background-color: #c0392b; }
         .btn-warning { background-color: #f39c12; color: white; }
         .btn-warning:hover { background-color: #e67e22; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .btn-info:hover { background-color: #138496; }
         .file-input-wrapper { position: relative; display: inline-block; }
         .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
         .file-input-label { padding: 10px 20px; background-color: #2ecc71; color: white; border-radius: 5px; cursor: pointer; display: inline-block; transition: background-color 0.3s; }
         .file-input-label:hover { background-color: #27ae60; }
         small { color: #7f8c8d; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .player-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
-        .player-select-list div { padding: 5px; cursor: pointer; border-radius: 3px; }
-        .player-select-list div:hover { background-color: #ecf0f1; }
-        .player-select-list div.selected { background-color: #3498db; color: white; }
-        .match-card { border: 1px solid #bdc3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #ffffff; }
-        .match-card h4 { margin-top: 0; color: #2980b9; }
-        .team { margin-bottom: 10px; }
-        .team span { font-weight: bold; }
-        .result-form { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
-        .timer-display { font-size: 2.5em; font-weight: bold; color: #27ae60; text-align: center; margin: 15px 0; font-family: 'Courier New', Courier, monospace; }
         .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
         .tab.active { border-bottom-color: #3498db; font-weight: bold; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Modal Styles */
+        /* --- Table Styles --- */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f2f2f2; }
+
+        /* --- Match Card Styles --- */
+        .match-card { border: 1px solid #bdc3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #ffffff; }
+        .match-card h4 { margin-top: 0; color: #2980b9; }
+        .team { margin-bottom: 10px; }
+        .team span { font-weight: bold; }
+        .result-form { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+        .timer-display { font-size: 2.5em; font-weight: bold; color: #27ae60; text-align: center; margin: 15px 0; font-family: 'Courier New', Courier, monospace; }
+        .player-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
+        .player-select-list div { padding: 5px; cursor: pointer; border-radius: 3px; }
+        .player-select-list div:hover { background-color: #ecf0f1; }
+        .player-select-list div.selected { background-color: #3498db; color: white; }
+
+        /* --- Dashboard Styles --- */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .dashboard-card { background-color: #f9f9f9; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .dashboard-card h3 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; color: #34495e; font-size: 1.2em; }
+        .dashboard-card p { font-size: 1.1em; margin: 8px 0; }
+        .dashboard-card strong { color: #2980b9; font-size: 1.3em; }
+        .dashboard-card ul { list-style-type: none; padding-left: 0; margin: 0; }
+        .dashboard-card ul li { padding: 8px 0; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-card ul li:last-child { border-bottom: none; }
+        .dashboard-card ul li .rank { font-weight: bold; color: #7f8c8d; margin-right: 10px; }
+        .dashboard-card ul li .player-name { flex-grow: 1; }
+        .dashboard-card ul li .stat-value { font-weight: bold; color: #2c3e50; }
+
+        /* --- Modal Styles --- */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 10px; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 10px; position: relative; }
+        .close { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; }
-        .history-table { width: 100%; margin-top: 20px; }
-        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        .win { color: #27ae60; font-weight: bold; }
-        .loss { color: #e74c3c; font-weight: bold; }
+        
+        /* --- History Card Styles --- */
+        .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
+        .history-card { border: 1px solid #e0e0e0; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .history-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .history-card.win { border-left-color: #2ecc71; }
+        .history-card.loss { border-left-color: #e74c3c; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .result { display: flex; align-items: center; font-size: 1.2em; font-weight: bold; }
+        .result-icon { margin-right: 8px; font-size: 1.2em; }
+        .history-card.win .result-text { color: #2ecc71; }
+        .history-card.loss .result-text { color: #e74c3c; }
+        .history-time { font-family: 'Courier New', Courier, monospace; color: #555; font-weight: bold; }
+        .history-details p { margin: 5px 0; font-size: 0.95em; }
+        .history-label { font-weight: bold; color: #34495e; display: inline-block; width: 80px; }
+        .history-date { color: #7f8c8d; font-size: 0.9em; margin-top: 10px !important; }
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            h1 { font-size: 1.8em; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .modal-content { width: 95%; margin: 10% auto; }
+
+            /* Responsive Table */
+            #player-table thead { display: none; }
+            #player-table, #player-table tbody, #player-table tr, #player-table td {
+                display: block;
+                width: 100%;
+            }
+            #player-table tr {
+                margin-bottom: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 10px;
+            }
+            #player-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+                border: none;
+                border-bottom: 1px solid #eee;
+            }
+            #player-table td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
+                font-weight: bold;
+                color: #34495e;
+            }
+            #player-table td:last-child { border-bottom: none; }
+            /* Style for the 'จัดการ' cell in responsive view */
+            #player-table td[data-label="จัดการ"] {
+                text-align: center;
+                padding-left: 15px; /* Override padding for this cell */
+                padding-top: 15px;
+                border-bottom: none;
+            }
+            #player-table td[data-label="จัดการ"]:before {
+                display: none; /* Hide the label for this cell */
+            }
+            #player-table td[data-label="จัดการ"] button {
+                display: block; /* Make buttons stack vertically */
+                width: 100%;
+                margin-bottom: 8px;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 576px) {
+            body { padding: 5px; }
+            .container { padding: 10px; }
+            h1 { font-size: 1.5em; }
+            .section { padding: 15px; }
+            .form-group { flex-direction: column; align-items: stretch; }
+            .form-group input, .form-group select, .form-group button, .file-input-label { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+            .tabs { flex-direction: column; }
+            .tab { text-align: center; }
+            .modal-content { margin: 0; width: 100%; height: 100%; max-width: none; border-radius: 0; padding: 15px; }
+            .modal-body { max-height: 80vh; }
+            .close { font-size: 28px; right: 15px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏸 ระบบจัดคู่แบดมินตัน (History Version) 🏸</h1>
+    <h1>🏸 ระบบจัดคู่แบดมินตัน (Final Version) 🏸</h1>
+
+    <!-- Dashboard Section -->
+    <div class="section" id="dashboard-section">
+        <h2>ภาพรวมระบบ (Dashboard)</h2>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>📊 สถิติหลัก</h3>
+                <p>ผู้เล่นทั้งหมด: <strong id="stat-total-players">0</strong></p>
+                <p>🎮 เกมที่เล่นทั้งหมด: <strong id="stat-total-games">0</strong></p>
+                <p>แมตช์ที่กำลังแข่ง: <strong id="stat-active-matches">0</strong></p>
+            </div>
+            <div class="dashboard-card">
+                <h3>🏆 อันดับผู้ชนะ (Top 5)</h3>
+                <ul id="top-wins-list"></ul>
+            </div>
+            <div class="dashboard-card">
+                <h3>🎮 อันดับผู้เล่นมากที่สุด (Top 5)</h3>
+                <ul id="top-games-list"></ul>
+            </div>
+            <div class="dashboard-card">
+                <h3>🕒 แมตช์ล่าสุดที่จบ</h3>
+                <ul id="recent-matches-list"></ul>
+            </div>
+        </div>
+    </div>
 
     <!-- ส่วนจัดการผู้เล่น -->
     <div class="section">
@@ -83,21 +209,23 @@
             </div>
             <small>*ไฟล์ Excel ควรมีคอลัมน์ชื่อว่า "Name" และ "Level"</small>
         </div>
+        <div class="form-group">
+            <button class="btn-danger" onclick="clearAllData()">ล้างข้อมูลผู้เล่นทั้งหมด</button>
+            <small style="color: #c0392b;">*คำเตือน: การกระทำนี้จะลบข้อมูลทั้งหมดและไม่สามารถย้อนกลับได้</small>
+        </div>
         <table id="player-table">
             <thead>
                 <tr>
                     <th>ชื่อ</th>
                     <th>ระดับ</th>
-                    <th>เกมที่เล่น</th>
+                    <th>🎮 จำนวนเกม</th>
                     <th>ชนะ</th>
                     <th>แพ้</th>
                     <th>เวลาทั้งหมด (นาที)</th>
                     <th>จัดการ</th>
                 </tr>
             </thead>
-            <tbody id="player-tbody">
-                <!-- Player rows will be inserted here -->
-            </tbody>
+            <tbody id="player-tbody"></tbody>
         </table>
     </div>
 
@@ -108,17 +236,13 @@
             <div class="tab active" data-tab="manual">จับคู่เอง</div>
             <div class="tab" data-tab="auto">จับคู่อัตโนมัติ</div>
         </div>
-
-        <!-- Tab 1: Manual Pairing -->
         <div id="manual-tab" class="tab-content active">
             <h3>เลือกผู้เล่น 4 คนเพื่อสร้างแมตช์</h3>
             <div class="player-select-list" id="manual-player-list"></div>
             <button id="create-manual-match-btn" class="btn-success" disabled>สร้างแมตช์</button>
         </div>
-
-        <!-- Tab 2: Auto Pairing -->
         <div id="auto-tab" class="tab-content">
-            <h3>สุ่มจับคู่ผู้เล่นที่ยังไม่ได้ลงเล่น</h3>
+            <h3>สุ่มจับคู่ผู้เล่นที่ยังไม่ได้ลงเล่น (โดยคำนึงถึงระดับ)</h3>
             <div class="form-group">
                 <label for="num-courts">จำนวนสนาม:</label>
                 <input type="number" id="num-courts" value="1" min="1" style="width: 80px;">
@@ -137,78 +261,84 @@
 <!-- The Modal -->
 <div id="historyModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2 id="modal-title"></h2>
+        <span class="close" onclick="closeHistoryModal()">&times;</span>
+        <h2 id="modal-title">ประวัติการแข่งขัน</h2>
         <div id="modal-body"></div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- DATA MANAGEMENT ---
-    const STORAGE_KEYS = { PLAYERS: 'badmintonPlayers_v5', MATCHES: 'badmintonMatches_v5' };
+    const STORAGE_KEYS = { PLAYERS: 'badmintonPlayers_final', MATCHES: 'badmintonMatches_final' };
     const getPlayers = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.PLAYERS)) || [];
     const savePlayers = (players) => localStorage.setItem(STORAGE_KEYS.PLAYERS, JSON.stringify(players));
     const getMatches = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.MATCHES)) || [];
     const saveMatches = (matches) => localStorage.setItem(STORAGE_KEYS.MATCHES, JSON.stringify(matches));
 
-    // --- STATE ---
     let players = getPlayers();
     let matches = getMatches();
     let selectedPlayersForManualMatch = [];
-    const activeTimers = {}; // To store setInterval IDs
+    const activeTimers = {};
 
-    // --- DOM ELEMENTS ---
+    players.forEach(p => { if (!p.gameHistory) p.gameHistory = []; });
+    savePlayers(players);
+
     const elements = {
-        addPlayerForm: document.getElementById('add-player-form'),
-        playerNameInput: document.getElementById('player-name-input'),
-        playerLevelInput: document.getElementById('player-level-input'),
-        excelUpload: document.getElementById('excel-upload'),
-        playerCount: document.getElementById('player-count'),
-        playerTbody: document.getElementById('player-tbody'),
-        manualPlayerList: document.getElementById('manual-player-list'),
-        createManualMatchBtn: document.getElementById('create-manual-match-btn'),
-        generateAutoMatchesBtn: document.getElementById('generate-auto-matches-btn'),
-        numCourtsInput: document.getElementById('num-courts'),
-        matchResultsSection: document.getElementById('match-results-section'),
-        matchesContainer: document.getElementById('matches-container'),
-        tabs: document.querySelectorAll('.tab'),
-        tabContents: document.querySelectorAll('.tab-content'),
-        historyModal: document.getElementById('historyModal'),
-        modalTitle: document.getElementById('modal-title'),
-        modalBody: document.getElementById('modal-body'),
+        statTotalPlayers: document.getElementById('stat-total-players'), statTotalGames: document.getElementById('stat-total-games'), statActiveMatches: document.getElementById('stat-active-matches'),
+        topWinsList: document.getElementById('top-wins-list'), topGamesList: document.getElementById('top-games-list'), recentMatchesList: document.getElementById('recent-matches-list'),
+        addPlayerForm: document.getElementById('add-player-form'), playerNameInput: document.getElementById('player-name-input'), playerLevelInput: document.getElementById('player-level-input'),
+        excelUpload: document.getElementById('excel-upload'), playerCount: document.getElementById('player-count'), playerTbody: document.getElementById('player-tbody'),
+        manualPlayerList: document.getElementById('manual-player-list'), createManualMatchBtn: document.getElementById('create-manual-match-btn'),
+        generateAutoMatchesBtn: document.getElementById('generate-auto-matches-btn'), numCourtsInput: document.getElementById('num-courts'),
+        matchResultsSection: document.getElementById('match-results-section'), matchesContainer: document.getElementById('matches-container'),
+        tabs: document.querySelectorAll('.tab'), tabContents: document.querySelectorAll('.tab-content'),
+        historyModal: document.getElementById('historyModal'), modalTitle: document.getElementById('modal-title'), modalBody: document.getElementById('modal-body'),
     };
 
-    // --- HELPER FUNCTIONS ---
     const formatTime = (totalSeconds) => {
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
-    
     const getPlayerName = (id) => players.find(p => p.id === id)?.name || 'N/A';
 
-    // --- RENDERING FUNCTIONS ---
+    const renderDashboard = () => {
+        const totalGames = players.reduce((sum, p) => sum + (p.gamesPlayed || 0), 0);
+        const activeMatches = matches.filter(m => m.status === 'waiting' || m.status === 'running').length;
+        elements.statTotalPlayers.textContent = players.length;
+        elements.statTotalGames.textContent = totalGames;
+        elements.statActiveMatches.textContent = activeMatches;
+        const topWins = [...players].sort((a, b) => (b.wins || 0) - (a.wins || 0)).slice(0, 5);
+        elements.topWinsList.innerHTML = topWins.length === 0 ? '<li>ยังไม่มีข้อมูล</li>' : topWins.map((p, i) => `<li><span class="rank">#${i+1}</span><span class="player-name">${p.name}</span><span class="stat-value">${p.wins || 0} ชนะ</span></li>`).join('');
+        const topGames = [...players].sort((a, b) => (b.gamesPlayed || 0) - (a.gamesPlayed || 0)).slice(0, 5);
+        elements.topGamesList.innerHTML = topGames.length === 0 ? '<li>ยังไม่มีข้อมูล</li>' : topGames.map((p, i) => `<li><span class="rank">#${i+1}</span><span class="player-name">${p.name}</span><span class="stat-value">${p.gamesPlayed || 0} เกม</span></li>`).join('');
+        const recentFinished = [...matches].filter(m => m.status === 'finished').sort((a,b) => b.court - a.court).slice(0, 5);
+        elements.recentMatchesList.innerHTML = recentFinished.length === 0 ? '<li>ไม่มีแมตช์ที่จบล่าสุด</li>' : recentFinished.map(m => {
+            const teamA = m.teamA.map(getPlayerName).join(', ');
+            const teamB = m.teamB.map(getPlayerName).join(', ');
+            return `<li><strong>สนาม ${m.court}:</strong> ${teamA} vs ${teamB}</li>`;
+        }).join('');
+    };
+
     const renderPlayers = () => {
         elements.playerTbody.innerHTML = '';
         elements.playerCount.textContent = players.length;
-        if (players.length === 0) {
-            elements.playerTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">ยังไม่มีรายชื่อผู้เล่น</td></tr>';
-            return;
+        if (players.length === 0) { 
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="7" style="text-align:center;" data-label="ข้อความ">ยังไม่มีรายชื่อผู้เล่น</td>`;
+            elements.playerTbody.appendChild(tr);
+            return; 
         }
         players.forEach(p => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${p.name}</td>
-                <td>${p.level}</td>
-                <td>${p.gamesPlayed || 0}</td>
-                <td>${p.wins || 0}</td>
-                <td>${p.losses || 0}</td>
-                <td>${Math.round((p.totalTimePlayed || 0) / 60)}</td>
-                <td>
-                    <button class="btn-primary" onclick="showHistory('${p.id}')">ดูประวัติ</button>
-                    <button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button>
-                </td>
+                <td data-label="ชื่อ">${p.name}</td>
+                <td data-label="ระดับ">${p.level}</td>
+                <td data-label="🎮 จำนวนเกม">${p.gamesPlayed || 0}</td>
+                <td data-label="ชนะ">${p.wins || 0}</td>
+                <td data-label="แพ้">${p.losses || 0}</td>
+                <td data-label="เวลาทั้งหมด (นาที)">${Math.round((p.totalTimePlayed || 0) / 60)}</td>
+                <td data-label="จัดการ"><button class="btn-info" onclick="showPlayerHistory('${p.id}')">ดูประวัติ</button><button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button></td>
             `;
             elements.playerTbody.appendChild(tr);
         });
@@ -217,121 +347,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderManualPlayerList = () => {
         const availablePlayers = players.filter(p => !matches.some(m => m.status === 'waiting' || m.status === 'running' && [...m.teamA, ...m.teamB].includes(p.id)));
         elements.manualPlayerList.innerHTML = '';
-        if (availablePlayers.length === 0) {
-            elements.manualPlayerList.innerHTML = '<div>ไม่มีผู้เล่นที่ว่าง</div>';
-            return;
-        }
+        if (availablePlayers.length === 0) { elements.manualPlayerList.innerHTML = '<div>ไม่มีผู้เล่นที่ว่าง</div>'; return; }
         availablePlayers.forEach(p => {
             const div = document.createElement('div');
             div.textContent = `${p.name} (${p.level})`;
             div.dataset.playerId = p.id;
             div.onclick = () => togglePlayerSelection(p.id);
-            if (selectedPlayersForManualMatch.includes(p.id)) {
-                div.classList.add('selected');
-            }
+            if (selectedPlayersForManualMatch.includes(p.id)) div.classList.add('selected');
             elements.manualPlayerList.appendChild(div);
         });
     };
 
     const renderMatches = () => {
-        if (matches.length === 0) {
-            elements.matchResultsSection.style.display = 'none';
-            return;
-        }
+        if (matches.length === 0) { elements.matchResultsSection.style.display = 'none'; return; }
         elements.matchResultsSection.style.display = 'block';
         elements.matchesContainer.innerHTML = '';
         matches.forEach(match => {
             const teamAPlayers = match.teamA.map(id => players.find(p => p.id === id));
             const teamBPlayers = match.teamB.map(id => players.find(p => p.id === id));
-            
             const matchCard = document.createElement('div');
             matchCard.className = 'match-card';
-            let content = `
-                <h4>สนามที่ ${match.court}</h4>
-                <div class="team"><span>ทีม A:</span> ${teamAPlayers.map(p => p.name).join(', ')}</div>
-                <div class="team"><span>ทีม B:</span> ${teamBPlayers.map(p => p.name).join(', ')}</div>
-            `;
-
-            if (match.status === 'waiting') {
-                content += `<button class="btn-success" onclick="startGame('${match.id}')">เริ่มเกม</button>`;
-            } else if (match.status === 'running') {
-                content += `
-                    <p style="text-align:center; color: #555;">เวลาที่ผ่านไป</p>
-                    <div class="timer-display" id="timer-${match.id}">${formatTime(match.duration)}</div>
-                    <button class="btn-danger" onclick="endGame('${match.id}')">จบเกม</button>
-                `;
-            } else if (match.status === 'finished') {
-                content += `
-                    <p><strong>เวลาที่ใช้:</strong> ${formatTime(match.duration)}</p>
-                    <div class="result-form">
-                        <strong>บันทึกผล:</strong>
-                        <label><input type="radio" name="winner-${match.id}" value="A"> ทีม A ชนะ</label>
-                        <label><input type="radio" name="winner-${match.id}" value="B"> ทีม B ชนะ</label>
-                        <button class="btn-warning" onclick="recordResult('${match.id}')">บันทึกผล</button>
-                        <button class="btn-danger" onclick="deleteMatch('${match.id}')">ลบแมตช์</button>
-                    </div>
-                `;
-            }
+            let content = `<h4>สนามที่ ${match.court}</h4><div class="team"><span>ทีม A:</span> ${teamAPlayers.map(p => p.name).join(', ')}</div><div class="team"><span>ทีม B:</span> ${teamBPlayers.map(p => p.name).join(', ')}</div>`;
+            if (match.status === 'waiting') { content += `<button class="btn-success" onclick="startGame('${match.id}')">เริ่มเกม</button>`; }
+            else if (match.status === 'running') { content += `<p style="text-align:center; color: #555;">เวลาที่ผ่านไป</p><div class="timer-display" id="timer-${match.id}">${formatTime(match.duration)}</div><button class="btn-danger" onclick="endGame('${match.id}')">จบเกม</button>`; }
+            else if (match.status === 'finished') { content += `<p><strong>เวลาที่ใช้:</strong> ${formatTime(match.duration)}</p><div class="result-form"><strong>บันทึกผล:</strong><label><input type="radio" name="winner-${match.id}" value="A"> ทีม A ชนะ</label><label><input type="radio" name="winner-${match.id}" value="B"> ทีม B ชนะ</label><button class="btn-warning" onclick="recordResult('${match.id}')">บันทึกผล</button><button class="btn-danger" onclick="deleteMatch('${match.id}')">ลบแมตช์</button></div>`; }
             matchCard.innerHTML = content;
             elements.matchesContainer.appendChild(matchCard);
         });
     };
     
-    // --- PLAYER LOGIC ---
     const addPlayer = (name, level) => {
-        const newPlayer = {
-            id: Date.now().toString(),
-            name, level,
-            gamesPlayed: 0, wins: 0, losses: 0, totalTimePlayed: 0,
-            gameHistory: [] // New field for history
-        };
-        players.push(newPlayer);
-        savePlayers(players);
-        renderAll();
+        const newPlayer = { id: Date.now().toString(), name, level, gamesPlayed: 0, wins: 0, losses: 0, totalTimePlayed: 0, gameHistory: [] };
+        players.push(newPlayer); savePlayers(players); renderAll();
     };
 
     window.deletePlayer = (id) => {
         if (confirm('ต้องการลบผู้เล่นคนนี้ใช่หรือไม่?')) {
-            if (matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(id))) {
-                alert('ไม่สามารถลบผู้เล่นที่กำลังแข่งขันอยู่ได้');
-                return;
-            }
-            players = players.filter(p => p.id !== id);
-            savePlayers(players);
-            renderAll();
+            if (matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(id))) { alert('ไม่สามารถลบผู้เล่นที่กำลังแข่งขันอยู่ได้'); return; }
+            players = players.filter(p => p.id !== id); savePlayers(players); renderAll();
+        }
+    };
+
+    window.clearAllData = () => {
+        if (confirm('คุณแน่ใจหรือไม่? การกระทำนี้จะลบข้อมูลผู้เล่นและประวัติทั้งหมด และไม่สามารถย้อนกลับได้!')) {
+            localStorage.removeItem(STORAGE_KEYS.PLAYERS);
+            localStorage.removeItem(STORAGE_KEYS.MATCHES);
+            alert('ล้างข้อมูลสำเร็จ! กำลังรีเฟรชหน้าเว็บ...');
+            location.reload();
         }
     };
     
-    // --- MATCH LOGIC ---
     const togglePlayerSelection = (id) => {
         const index = selectedPlayersForManualMatch.indexOf(id);
-        if (index > -1) {
-            selectedPlayersForManualMatch.splice(index, 1);
-        } else {
-            if (selectedPlayersForManualMatch.length < 4) {
-                selectedPlayersForManualMatch.push(id);
-            } else {
-                alert('เลือกผู้เล่นครบ 4 คนแล้ว');
-            }
-        }
+        if (index > -1) { selectedPlayersForManualMatch.splice(index, 1); } else { if (selectedPlayersForManualMatch.length < 4) { selectedPlayersForManualMatch.push(id); } else { alert('เลือกผู้เล่นครบ 4 คนแล้ว'); } }
         renderManualPlayerList();
         elements.createManualMatchBtn.disabled = selectedPlayersForManualMatch.length !== 4;
     };
 
     const createManualMatch = () => {
         if (selectedPlayersForManualMatch.length !== 4) return;
-        const newMatch = {
-            id: Date.now().toString(),
-            court: matches.filter(m => m.status !== 'finished').length + 1,
-            teamA: selectedPlayersForManualMatch.slice(0, 2),
-            teamB: selectedPlayersForManualMatch.slice(2, 4),
-            status: 'waiting',
-            duration: 0,
-        };
-        matches.push(newMatch);
-        saveMatches(matches);
-        selectedPlayersForManualMatch = [];
-        renderAll();
+        const newMatch = { id: Date.now().toString(), court: matches.filter(m => m.status !== 'finished').length + 1, teamA: selectedPlayersForManualMatch.slice(0, 2), teamB: selectedPlayersForManualMatch.slice(2, 4), status: 'waiting', duration: 0, };
+        matches.push(newMatch); saveMatches(matches); selectedPlayersForManualMatch = []; renderAll();
     };
 
     const createAutoMatches = () => {
@@ -339,179 +415,103 @@ document.addEventListener('DOMContentLoaded', () => {
         const playersNeeded = numCourts * 4;
         const availablePlayers = players.filter(p => !matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(p.id)));
 
-        if (availablePlayers.length < playersNeeded) {
-            alert(`จำนวนผู้เล่นที่ว่างไม่พอ! ต้องการอย่างน้อย ${playersNeeded} คน สำหรับ ${numCourts} สนาม (มีผู้เล่นว่าง ${availablePlayers.length} คน)`);
-            return;
-        }
-        const shuffled = [...availablePlayers].sort(() => 0.5 - Math.random());
+        if (availablePlayers.length < playersNeeded) { alert(`จำนวนผู้เล่นที่ว่างไม่พอ! ต้องการอย่างน้อย ${playersNeeded} คน สำหรับ ${numCourts} สนาม (มีผู้เล่นว่าง ${availablePlayers.length} คน)`); return; }
+        
+        // *** NEW LOGIC: Sort players by level before pairing ***
+        const levelOrder = { 'BG': 1, 'N-': 2, 'N+': 3 };
+        availablePlayers.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
         
         for (let i = 0; i < numCourts; i++) {
-            const courtPlayers = shuffled.slice(i * 4, (i + 1) * 4);
-            const newMatch = {
-                id: Date.now().toString() + i,
-                court: matches.filter(m => m.status !== 'finished').length + i + 1,
-                teamA: [courtPlayers[0].id, courtPlayers[1].id],
-                teamB: [courtPlayers[2].id, courtPlayers[3].id],
-                status: 'waiting',
-                duration: 0,
-            };
+            const courtPlayers = availablePlayers.slice(i * 4, (i + 1) * 4);
+            const newMatch = { id: Date.now().toString() + i, court: matches.filter(m => m.status !== 'finished').length + i + 1, teamA: [courtPlayers[0].id, courtPlayers[1].id], teamB: [courtPlayers[2].id, courtPlayers[3].id], status: 'waiting', duration: 0, };
             matches.push(newMatch);
         }
-        saveMatches(matches);
-        renderAll();
+        saveMatches(matches); renderAll();
     };
 
     window.startGame = (matchId) => {
         const match = matches.find(m => m.id === matchId);
         if (!match) return;
-        match.status = 'running';
-        match.duration = 0;
-        saveMatches(matches);
-        renderAll();
-
-        activeTimers[matchId] = setInterval(() => {
-            match.duration++;
-            const timerEl = document.getElementById(`timer-${matchId}`);
-            if (timerEl) {
-                timerEl.textContent = formatTime(match.duration);
-            }
-        }, 1000);
+        match.status = 'running'; match.duration = 0; saveMatches(matches); renderAll();
+        activeTimers[matchId] = setInterval(() => { match.duration++; const timerEl = document.getElementById(`timer-${matchId}`); if (timerEl) { timerEl.textContent = formatTime(match.duration); } }, 1000);
     };
 
     window.endGame = (matchId) => {
         const match = matches.find(m => m.id === matchId);
         if (!match || match.status !== 'running') return;
-
-        clearInterval(activeTimers[matchId]);
-        delete activeTimers[matchId];
-
-        match.status = 'finished';
-        saveMatches(matches);
-        renderAll();
+        clearInterval(activeTimers[matchId]); delete activeTimers[matchId];
+        match.status = 'finished'; saveMatches(matches); renderAll();
     };
 
     window.recordResult = (matchId) => {
         const winnerTeam = document.querySelector(`input[name="winner-${matchId}"]:checked`);
-        if (!winnerTeam) {
-            alert('กรุณาเลือกทีมที่ชนะ');
-            return;
-        }
-
+        if (!winnerTeam) { alert('กรุณาเลือกทีมที่ชนะ'); return; }
         const match = matches.find(m => m.id === matchId);
         const winnerIds = winnerTeam.value === 'A' ? match.teamA : match.teamB;
-        const loserIds = winnerTeam.value === 'A' ? match.teamB : match.teamA;
         const allPlayerIds = [...match.teamA, ...match.teamB];
-
+        const historyEntry = { timestamp: new Date().toISOString(), duration: match.duration, result: '', partners: [], opponents: [] };
         allPlayerIds.forEach(id => {
             const player = players.find(p => p.id === id);
             player.gamesPlayed = (player.gamesPlayed || 0) + 1;
             player.totalTimePlayed = (player.totalTimePlayed || 0) + match.duration;
-            
-            const isWinner = winnerIds.includes(id);
-            if (isWinner) {
-                player.wins = (player.wins || 0) + 1;
-            } else {
-                player.losses = (player.losses || 0) + 1;
-            }
-
-            // --- Record History ---
-            const partnerId = allPlayerIds.find(pid => pid !== id && (winnerIds.includes(pid) === isWinner));
-            const opponentIds = allPlayerIds.filter(pid => pid !== id && pid !== partnerId);
-            
-            const historyEntry = {
-                partner: getPlayerName(partnerId),
-                opponents: opponentIds.map(getPlayerName),
-                result: isWinner ? 'win' : 'loss',
-                duration: match.duration,
-                timestamp: new Date().toISOString()
-            };
-            player.gameHistory.push(historyEntry);
+            const playerHistoryEntry = { ...historyEntry };
+            if (winnerIds.includes(id)) { player.wins = (player.wins || 0) + 1; playerHistoryEntry.result = 'win'; } else { player.losses = (player.losses || 0) + 1; playerHistoryEntry.result = 'loss'; }
+            if (match.teamA.includes(id)) { playerHistoryEntry.partners = match.teamA.filter(pid => pid !== id).map(getPlayerName); playerHistoryEntry.opponents = match.teamB.map(getPlayerName); } else { playerHistoryEntry.partners = match.teamB.filter(pid => pid !== id).map(getPlayerName); playerHistoryEntry.opponents = match.teamA.map(getPlayerName); }
+            player.gameHistory.push(playerHistoryEntry);
         });
-
         matches = matches.filter(m => m.id !== matchId);
-        
-        savePlayers(players);
-        saveMatches(matches);
-        renderAll();
-        alert('บันทึกผลสำเร็จ!');
+        savePlayers(players); saveMatches(matches); renderAll(); alert('บันทึกผลสำเร็จ!');
     };
 
     window.deleteMatch = (id) => {
         if (confirm('ต้องการลบแมตช์นี้ใช่หรือไม่?')) {
             const match = matches.find(m => m.id === id);
-            if (match && match.status === 'running') {
-                clearInterval(activeTimers[id]);
-                delete activeTimers[id];
-            }
-            matches = matches.filter(m => m.id !== id);
-            saveMatches(matches);
-            renderAll();
+            if (match && match.status === 'running') { clearInterval(activeTimers[id]); delete activeTimers[id]; }
+            matches = matches.filter(m => m.id !== id); saveMatches(matches); renderAll();
         }
     };
-    
-    // --- MODAL LOGIC ---
-    window.showHistory = (playerId) => {
+
+    window.showPlayerHistory = (playerId) => {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
-
         elements.modalTitle.textContent = `ประวัติการแข่งขันของ ${player.name}`;
-        
-        if (player.gameHistory && player.gameHistory.length > 0) {
-            let historyHtml = `
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>คู่</th>
-                            <th>จับคู่กับ</th>
-                            <th>ผล</th>
-                            <th>เวลา</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            player.gameHistory.forEach(game => {
+        if (player.gameHistory.length === 0) {
+            elements.modalBody.innerHTML = '<p>ยังไม่มีประวัติการแข่งขัน</p>';
+        } else {
+            let historyHtml = '';
+            const sortedHistory = [...player.gameHistory].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            sortedHistory.forEach(game => {
+                const resultClass = game.result === 'win' ? 'win' : 'loss';
+                const resultIcon = game.result === 'win' ? '✔️' : '❌';
+                const resultText = game.result === 'win' ? 'ชนะ' : 'แพ้';
+                const gameDate = new Date(game.timestamp).toLocaleDateString('th-TH');
                 historyHtml += `
-                    <tr>
-                        <td>${game.opponents.join(', ')}</td>
-                        <td>${game.partner}</td>
-                        <td class="${game.result}">${game.result === 'win' ? 'ชนะ' : 'แพ้'}</td>
-                        <td>${formatTime(game.duration)}</td>
-                    </tr>
+                    <div class="history-card ${resultClass}">
+                        <div class="history-header">
+                            <div class="result"><span class="result-icon">${resultIcon}</span><span class="result-text">${resultText}</span></div>
+                            <div class="history-time">${formatTime(game.duration)}</div>
+                        </div>
+                        <div class="history-details">
+                            <p><span class="history-label">คู่ของคุณ:</span> ${game.partners.join(', ') || '-'}</p>
+                            <p><span class="history-label">คู่ตรงข้าม:</span> ${game.opponents.join(', ')}</p>
+                            <p class="history-date"><span class="history-label">วันที่:</span> ${gameDate}</p>
+                        </div>
+                    </div>
                 `;
             });
-            historyHtml += `</tbody></table>`;
             elements.modalBody.innerHTML = historyHtml;
-        } else {
-            elements.modalBody.innerHTML = '<p style="text-align:center; color:#888;">ยังไม่มีประวัติการแข่งขัน</p>';
         }
-        
         elements.historyModal.style.display = 'block';
     };
 
-    // Close modal when clicking on <span> (x)
-    document.querySelector('.close').onclick = () => {
-        elements.historyModal.style.display = 'none';
-    };
-    // Close modal when clicking outside of the modal content
-    window.onclick = (event) => {
-        if (event.target == elements.historyModal) {
-            elements.historyModal.style.display = 'none';
-        }
-    };
+    window.closeHistoryModal = () => { elements.historyModal.style.display = 'none'; };
+    window.onclick = (event) => { if (event.target === elements.historyModal) { closeHistoryModal(); } };
 
-    // --- EVENT LISTENERS ---
     elements.addPlayerForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = elements.playerNameInput.value.trim();
         const level = elements.playerLevelInput.value;
-        if (name) {
-            if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-                alert(`ชื่อ "${name}" มีอยู่ในระบบแล้ว!`);
-                return;
-            }
-            addPlayer(name, level);
-            elements.playerNameInput.value = '';
-        }
+        if (name) { if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert(`ชื่อ "${name}" มีอยู่ในระบบแล้ว!`); return; } addPlayer(name, level); elements.playerNameInput.value = ''; }
     });
 
     elements.excelUpload.addEventListener('change', (e) => {
@@ -528,10 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data.forEach(row => {
                 const name = row.Name || row.name || row.ชื่อ;
                 const level = row.Level || row.level || row.ระดับ || 'BG';
-                if (name && !players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-                    addPlayer(name.trim(), level);
-                    addedCount++;
-                }
+                if (name && !players.some(p => p.name.toLowerCase() === name.toLowerCase())) { addPlayer(name.trim(), level); addedCount++; }
             });
             alert(`เพิ่มผู้เล่นจาก Excel สำเร็จ ${addedCount} คน`);
         };
@@ -542,7 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.createManualMatchBtn.addEventListener('click', createManualMatch);
     elements.generateAutoMatchesBtn.addEventListener('click', createAutoMatches);
 
-    // Tab switching
     elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const targetTab = tab.dataset.tab;
@@ -553,20 +549,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- INITIALIZATION ---
-    const renderAll = () => {
-        renderPlayers();
-        renderManualPlayerList();
-        renderMatches();
-    };
+    const renderAll = () => { renderDashboard(); renderPlayers(); renderManualPlayerList(); renderMatches(); };
 
-    // On page load, clear any running timers from previous session
-    matches.forEach(match => {
-        if (match.status === 'running') {
-            match.status = 'waiting';
-            match.duration = 0;
-        }
-    });
+    matches.forEach(match => { if (match.status === 'running') { match.status = 'waiting'; match.duration = 0; } });
     saveMatches(matches);
     
     renderAll();
@@ -574,5 +559,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
-
 </html>
