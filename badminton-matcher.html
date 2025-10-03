@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดคู่แบดมินตัน (Supabase Version)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1, h2, h3, h4 { color: #2c3e50; }
+        h1 { text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        .section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fdfdfd; }
+        .form-group { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+        input[type="text"], input[type="number"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+        .btn-primary { background-color: #3498db; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #2980b9; }
+        .btn-success { background-color: #2ecc71; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #27ae60; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-warning { background-color: #f39c12; color: white; }
+        .btn-warning:hover { background-color: #e67e22; }
+        small { color: #7f8c8d; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .player-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
+        .player-select-list div { padding: 5px; cursor: pointer; border-radius: 3px; }
+        .player-select-list div:hover { background-color: #ecf0f1; }
+        .player-select-list div.selected { background-color: #3498db; color: white; }
+        .match-card { border: 1px solid #bdc3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #ffffff; }
+        .match-card h4 { margin-top: 0; color: #2980b9; }
+        .team { margin-bottom: 10px; }
+        .team span { font-weight: bold; }
+        .result-form { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+        .timer-display { font-size: 2.5em; font-weight: bold; color: #27ae60; text-align: center; margin: 15px 0; font-family: 'Courier New', Courier, monospace; }
+        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom-color: #3498db; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 10px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover, .close:focus { color: black; text-decoration: none; }
+        .history-table { width: 100%; margin-top: 20px; }
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .win { color: #27ae60; font-weight: bold; }
+        .loss { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏸 ระบบจัดคู่แบดมินตัน (Supabase Version) 🏸</h1>
+    <div class="section">
+        <h2>จัดการผู้เล่น (<span id="player-count">0</span> คน)</h2>
+        <form id="add-player-form" class="form-group">
+            <input type="text" id="player-name-input" placeholder="ชื่อผู้เล่น" required>
+            <select id="player-level-input">
+                <option value="BG">BG</option>
+                <option value="N-">N-</option>
+                <option value="N+">N+</option>
+            </select>
+            <button type="submit" class="btn-primary">เพิ่มผู้เล่น</button>
+        </form>
+        <small>หมายเหตุ: การจัดการรายชื่อผู้เล่น (เพิ่ม/ลบ/แก้ไข) สามารถทำได้โดยตรงใน Supabase Table Editor</small>
+        <table id="player-table">
+            <thead>
+                <tr>
+                    <th>ชื่อ</th>
+                    <th>ระดับ</th>
+                    <th>เกมที่เล่น</th>
+                    <th>ชนะ</th>
+                    <th>แพ้</th>
+                    <th>เวลาทั้งหมด (นาที)</th>
+                    <th>จัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="player-tbody"></tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>จัดคู่ / สร้างแมตช์</h2>
+        <div class="tabs">
+            <div class="tab active" data-tab="manual">จับคู่เอง</div>
+            <div class="tab" data-tab="auto">จับคู่อัตโนมัติ</div>
+        </div>
+        <div id="manual-tab" class="tab-content active">
+            <h3>เลือกผู้เล่น 4 คนเพื่อสร้างแมตช์</h3>
+            <div class="player-select-list" id="manual-player-list"></div>
+            <button id="create-manual-match-btn" class="btn-success" disabled>สร้างแมตช์</button>
+        </div>
+        <div id="auto-tab" class="tab-content">
+            <h3>สุ่มจับคู่ผู้เล่นที่ยังไม่ได้ลงเล่น</h3>
+            <div class="form-group">
+                <label for="num-courts">จำนวนสนาม:</label>
+                <input type="number" id="num-courts" value="1" min="1" style="width: 80px;">
+                <button id="generate-auto-matches-btn" class="btn-success">จับคู่อัตโนมัติ!</button>
+            </div>
+        </div>
+    </div>
+    <div id="match-results-section" class="section" style="display: none;">
+        <h2>แมตช์ที่กำลังแข่งขัน</h2>
+        <div id="matches-container"></div>
+    </div>
+</div>
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modal-title"></h2>
+        <div id="modal-body"></div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIGURATION ---
+    // วาง URL และ Key จาก Supabase ของคุณที่นี่!
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- STATE ---
+    let players = [];
+    let matches = [];
+    let selectedPlayersForManualMatch = [];
+    const activeTimers = {};
+
+    // --- DOM ELEMENTS ---
+    const elements = {
+        addPlayerForm: document.getElementById('add-player-form'),
+        playerNameInput: document.getElementById('player-name-input'),
+        playerLevelInput: document.getElementById('player-level-input'),
+        playerCount: document.getElementById('player-count'),
+        playerTbody: document.getElementById('player-tbody'),
+        manualPlayerList: document.getElementById('manual-player-list'),
+        createManualMatchBtn: document.getElementById('create-manual-match-btn'),
+        generateAutoMatchesBtn: document.getElementById('generate-auto-matches-btn'),
+        numCourtsInput: document.getElementById('num-courts'),
+        matchResultsSection: document.getElementById('match-results-section'),
+        matchesContainer: document.getElementById('matches-container'),
+        tabs: document.querySelectorAll('.tab'),
+        tabContents: document.querySelectorAll('.tab-content'),
+        historyModal: document.getElementById('historyModal'),
+        modalTitle: document.getElementById('modal-title'),
+        modalBody: document.getElementById('modal-body'),
+    };
+
+    // --- HELPER FUNCTIONS ---
+    const formatTime = (totalSeconds) => {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+    const getPlayerName = (id) => players.find(p => p.id === id)?.name || 'N/A';
+
+    // --- DATA FUNCTIONS (SUPABASE) ---
+    const fetchPlayers = async () => {
+        const { data, error } = await supabase.from('players').select('*');
+        if (error) {
+            console.error("Failed to fetch players:", error);
+            alert('ไม่สามารถดึงข้อมูลผู้เล่นได้!');
+            players = [];
+        } else {
+            players = data;
+        }
+    };
+
+    const savePlayer = async (playerData) => {
+        const { error } = await supabase.from('players').upsert(playerData);
+        if (error) {
+            console.error("Failed to save player:", error);
+            alert('ไม่สามารถบันทึกข้อมูลผู้เล่นได้!');
+            return false;
+        }
+        return true;
+    };
+
+    // --- RENDERING FUNCTIONS ---
+    const renderPlayers = () => {
+        elements.playerTbody.innerHTML = '';
+        elements.playerCount.textContent = players.length;
+        if (players.length === 0) {
+            elements.playerTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">ยังไม่มีรายชื่อผู้เล่น</td></tr>';
+            return;
+        }
+        players.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.name}</td>
+                <td>${p.level}</td>
+                <td>${p.gamesplayed || 0}</td>
+                <td>${p.wins || 0}</td>
+                <td>${p.losses || 0}</td>
+                <td>${Math.round((p.totaltimeplayed || 0) / 60)}</td>
+                <td>
+                    <button class="btn-primary" onclick="showHistory('${p.id}')">ดูประวัติ</button>
+                </td>
+            `;
+            elements.playerTbody.appendChild(tr);
+        });
+    };
+    const renderManualPlayerList = () => {
+        const availablePlayers = players.filter(p => !matches.some(m => m.status === 'waiting' || m.status === 'running' && [...m.teamA, ...m.teamB].includes(p.id)));
+        elements.manualPlayerList.innerHTML = '';
+        if (availablePlayers.length === 0) { elements.manualPlayerList.innerHTML = '<div>ไม่มีผู้เล่นที่ว่าง</div>'; return; }
+        availablePlayers.forEach(p => {
+            const div = document.createElement('div');
+            div.textContent = `${p.name} (${p.level})`;
+            div.dataset.playerId = p.id;
+            div.onclick = () => togglePlayerSelection(p.id);
+            if (selectedPlayersForManualMatch.includes(p.id)) div.classList.add('selected');
+            elements.manualPlayerList.appendChild(div);
+        });
+    };
+    const renderMatches = () => {
+        if (matches.length === 0) { elements.matchResultsSection.style.display = 'none'; return; }
+        elements.matchResultsSection.style.display = 'block';
+        elements.matchesContainer.innerHTML = '';
+        matches.forEach(match => {
+            const teamAPlayers = match.teamA.map(id => players.find(p => p.id === id));
+            const teamBPlayers = match.teamB.map(id => players.find(p => p.id === id));
+            const matchCard = document.createElement('div');
+            matchCard.className = 'match-card';
+            let content = `
+                <h4>สนามที่ ${match.court}</h4>
+                <div class="team"><span>ทีม A:</span> ${teamAPlayers.map(p => p.name).join(', ')}</div>
+                <div class="team"><span>ทีม B:</span> ${teamBPlayers.map(p => p.name).join(', ')}</div>
+            `;
+            if (match.status === 'waiting') {
+                content += `<button class="btn-success" onclick="startGame('${match.id}')">เริ่มเกม</button>`;
+            } else if (match.status === 'running') {
+                content += `
+                    <p style="text-align:center; color: #555;">เวลาที่ผ่านไป</p>
+                    <div class="timer-display" id="timer-${match.id}">${formatTime(match.duration)}</div>
+                    <button class="btn-danger" onclick="endGame('${match.id}')">จบเกม</button>
+                `;
+            } else if (match.status === 'finished') {
+                content += `
+                    <p><strong>เวลาที่ใช้:</strong> ${formatTime(match.duration)}</p>
+                    <div class="result-form">
+                        <strong>บันทึกผล:</strong>
+                        <label><input type="radio" name="winner-${match.id}" value="A"> ทีม A ชนะ</label>
+                        <label><input type="radio" name="winner-${match.id}" value="B"> ทีม B ชนะ</label>
+                        <button class="btn-warning" onclick="recordResult('${match.id}')">บันทึกผล</button>
+                        <button class="btn-danger" onclick="deleteMatch('${match.id}')">ลบแมตช์</button>
+                    </div>
+                `;
+            }
+            matchCard.innerHTML = content;
+            elements.matchesContainer.appendChild(matchCard);
+        });
+    };
+    
+    // --- PLAYER LOGIC ---
+    const addPlayer = async (name, level) => {
+        const newPlayer = {
+            id: Date.now().toString(),
+            name, level,
+            gamesplayed: 0, wins: 0, losses: 0, totaltimeplayed: 0,
+            gamehistory: []
+        };
+        const success = await savePlayer(newPlayer);
+        if (success) {
+            await fetchPlayers();
+            renderAll();
+        }
+    };
+    
+    // --- MATCH LOGIC ---
+    const togglePlayerSelection = (id) => {
+        const index = selectedPlayersForManualMatch.indexOf(id);
+        if (index > -1) { selectedPlayersForManualMatch.splice(index, 1); } else {
+            if (selectedPlayersForManualMatch.length < 4) { selectedPlayersForManualMatch.push(id); } else { alert('เลือกผู้เล่นครบ 4 คนแล้ว'); }
+        }
+        renderManualPlayerList();
+        elements.createManualMatchBtn.disabled = selectedPlayersForManualMatch.length !== 4;
+    };
+    const createManualMatch = () => {
+        if (selectedPlayersForManualMatch.length !== 4) return;
+        const newMatch = { id: Date.now().toString(), court: matches.filter(m => m.status !== 'finished').length + 1, teamA: selectedPlayersForManualMatch.slice(0, 2), teamB: selectedPlayersForManualMatch.slice(2, 4), status: 'waiting', duration: 0, };
+        matches.push(newMatch);
+        selectedPlayersForManualMatch = [];
+        renderAll();
+    };
+    const createAutoMatches = () => {
+        const numCourts = parseInt(elements.numCourtsInput.value, 10);
+        const playersNeeded = numCourts * 4;
+        const availablePlayers = players.filter(p => !matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(p.id)));
+        if (availablePlayers.length < playersNeeded) { alert(`จำนวนผู้เล่นที่ว่างไม่พอ! ต้องการอย่างน้อย ${playersNeeded} คน สำหรับ ${numCourts} สนาม (มีผู้เล่นว่าง ${availablePlayers.length} คน)`); return; }
+        const shuffled = [...availablePlayers].sort(() => 0.5 - Math.random());
+        for (let i = 0; i < numCourts; i++) {
+            const courtPlayers = shuffled.slice(i * 4, (i + 1) * 4);
+            const newMatch = { id: Date.now().toString() + i, court: matches.filter(m => m.status !== 'finished').length + i + 1, teamA: [courtPlayers[0].id, courtPlayers[1].id], teamB: [courtPlayers[2].id, courtPlayers[3].id], status: 'waiting', duration: 0, };
+            matches.push(newMatch);
+        }
+        renderAll();
+    };
+    window.startGame = (matchId) => {
+        const match = matches.find(m => m.id === matchId); if (!match) return;
+        match.status = 'running'; match.duration = 0; renderAll();
+        activeTimers[matchId] = setInterval(() => { match.duration++; const timerEl = document.getElementById(`timer-${matchId}`); if (timerEl) { timerEl.textContent = formatTime(match.duration); } }, 1000);
+    };
+    window.endGame = (matchId) => {
+        const match = matches.find(m => m.id === matchId); if (!match || match.status !== 'running') return;
+        clearInterval(activeTimers[matchId]); delete activeTimers[matchId];
+        match.status = 'finished'; renderAll();
+    };
+    window.recordResult = async (matchId) => {
+        const winnerTeam = document.querySelector(`input[name="winner-${matchId}"]:checked`);
+        if (!winnerTeam) { alert('กรุณาเลือกทีมที่ชนะ'); return; }
+        const match = matches.find(m => m.id === matchId);
+        const winnerIds = winnerTeam.value === 'A' ? match.teamA : match.teamB;
+        const allPlayerIds = [...match.teamA, ...match.teamB];
+        const updatedPlayers = [];
+        allPlayerIds.forEach(id => {
+            let player = players.find(p => p.id === id);
+            player.gamesplayed = (player.gamesplayed || 0) + 1;
+            player.totaltimeplayed = (player.totaltimeplayed || 0) + match.duration;
+            const isWinner = winnerIds.includes(id);
+            if (isWinner) { player.wins = (player.wins || 0) + 1; } else { player.losses = (player.losses || 0) + 1; }
+            const partnerId = allPlayerIds.find(pid => pid !== id && (winnerIds.includes(pid) === isWinner));
+            const opponentIds = allPlayerIds.filter(pid => pid !== id && pid !== partnerId);
+            const historyEntry = { partner: getPlayerName(partnerId), opponents: opponentIds.map(getPlayerName), result: isWinner ? 'win' : 'loss', duration: match.duration, timestamp: new Date().toISOString() };
+            player.gamehistory.push(historyEntry);
+            updatedPlayers.push(player);
+        });
+        for (const p of updatedPlayers) {
+            await savePlayer(p);
+        }
+        await fetchPlayers();
+        matches = matches.filter(m => m.id !== matchId);
+        renderAll();
+        alert('บันทึกผลสำเร็จ!');
+    };
+    window.deleteMatch = (id) => {
+        if (confirm('ต้องการลบแมตช์นี้ใช่หรือไม่?')) {
+            const match = matches.find(m => m.id === id);
+            if (match && match.status === 'running') { clearInterval(activeTimers[id]); delete activeTimers[id]; }
+            matches = matches.filter(m => m.id !== id);
+            renderAll();
+        }
+    };
+    
+    // --- MODAL LOGIC ---
+    window.showHistory = (playerId) => {
+        const player = players.find(p => p.id === playerId); if (!player) return;
+        elements.modalTitle.textContent = `ประวัติการแข่งขันของ ${player.name}`;
+        if (player.gamehistory && player.gamehistory.length > 0) {
+            let historyHtml = `<table class="history-table"><thead><tr><th>คู่</th><th>จับคู่กับ</th><th>ผล</th><th>เวลา</th></tr></thead><tbody>`;
+            player.gamehistory.forEach(game => {
+                historyHtml += `<tr><td>${game.opponents.join(', ')}</td><td>${game.partner}</td><td class="${game.result}">${game.result === 'win' ? 'ชนะ' : 'แพ้'}</td><td>${formatTime(game.duration)}</td></tr>`;
+            });
+            historyHtml += `</tbody></table>`;
+            elements.modalBody.innerHTML = historyHtml;
+        } else { elements.modalBody.innerHTML = '<p style="text-align:center; color:#888;">ยังไม่มีประวัติการแข่งขัน</p>'; }
+        elements.historyModal.style.display = 'block';
+    };
+    document.querySelector('.close').onclick = () => { elements.historyModal.style.display = 'none'; };
+    window.onclick = (event) => { if (event.target == elements.historyModal) { elements.historyModal.style.display = 'none'; } };
+
+    // --- EVENT LISTENERS ---
+    elements.addPlayerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = elements.playerNameInput.value.trim();
+        const level = elements.playerLevelInput.value;
+        if (name) {
+            if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert(`ชื่อ "${name}" มีอยู่ในระบบแล้ว!`); return; }
+            await addPlayer(name, level);
+            elements.playerNameInput.value = '';
+        }
+    });
+    elements.createManualMatchBtn.addEventListener('click', createManualMatch);
+    elements.generateAutoMatchesBtn.addEventListener('click', createAutoMatches);
+    elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            elements.tabs.forEach(t => t.classList.remove('active'));
+            elements.tabContents.forEach(tc => tc.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`${targetTab}-tab`).classList.add('active');
+        });
+    });
+
+    // --- INITIALIZATION ---
+    const renderAll = () => {
+        renderPlayers();
+        renderManualPlayerList();
+        renderMatches();
+    };
+
+    const init = async () => {
+        if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+            alert('กรุณาวาง URL และ Anon Key จาก Supabase ลงในโค้ด HTML ก่อนใช้งาน!');
+            return;
+        }
+        await fetchPlayers();
+        renderAll();
+    };
+
+    init();
+});
+</script>
+</body>
+</html>
