@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดคู่แบดมินตัน (Final Version)</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* --- General Styles --- */
@@ -75,7 +74,7 @@
         .close { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; }
         
-        /* --- History Table Styles --- */
+        /* --- History Table Styles (NEW) --- */
         .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
         .history-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
         .history-table th, .history-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
@@ -83,25 +82,6 @@
         .history-table tr:nth-child(even) { background-color: #f9f9f9; }
         .history-table .win { color: #2ecc71; font-weight: bold; }
         .history-table .loss { color: #e74c3c; font-weight: bold; }
-        
-        /* --- Action Icon Styles --- */
-        .action-icon {
-            cursor: pointer;
-            margin: 0 5px;
-            font-size: 1.2em;
-            color: #3498db; /* Default color, like btn-info */
-            transition: color 0.2s, transform 0.2s;
-        }
-        .action-icon:hover {
-            color: #2980b9; /* Darker shade on hover */
-            transform: scale(1.2);
-        }
-        .action-icon.delete-icon {
-            color: #e74c3c; /* Red color for delete, like btn-danger */
-        }
-        .action-icon.delete-icon:hover {
-            color: #c0392b; /* Darker red on hover */
-        }
 
         /* --- Responsive Styles --- */
         @media (max-width: 768px) {
@@ -143,17 +123,18 @@
             /* Style for the 'จัดการ' cell in responsive view */
             #player-table td[data-label="จัดการ"] {
                 text-align: center;
-                padding-left: 15px;
+                padding-left: 15px; /* Override padding for this cell */
                 padding-top: 15px;
                 border-bottom: none;
             }
             #player-table td[data-label="จัดการ"]:before {
-                display: none;
+                display: none; /* Hide the label for this cell */
             }
-            #player-table td[data-label="จัดการ"] .action-icon {
-                display: inline-block;
-                margin: 0 10px;
-                font-size: 1.8em; /* Make them bigger for easier tapping */
+            #player-table td[data-label="จัดการ"] button {
+                display: block; /* Make buttons stack vertically */
+                width: 100%;
+                margin-bottom: 8px;
+                box-sizing: border-box;
             }
         }
 
@@ -350,10 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="ชนะ">${p.wins || 0}</td>
                 <td data-label="แพ้">${p.losses || 0}</td>
                 <td data-label="เวลาทั้งหมด (นาที)">${Math.round((p.totalTimePlayed || 0) / 60)}</td>
-                <td data-label="จัดการ" class="action-icons-cell">
-                    <span class="action-icon" onclick="showPlayerHistory('${p.id}')" title="ดูประวัติ"><i class="fas fa-eye"></i></span>
-                    <span class="action-icon delete-icon" onclick="deletePlayer('${p.id}')" title="ลบผู้เล่น"><i class="fas fa-trash-alt"></i></span>
-                </td>
+                <td data-label="จัดการ"><button class="btn-info" onclick="showPlayerHistory('${p.id}')">ดูประวัติ</button><button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button></td>
             `;
             elements.playerTbody.appendChild(tr);
         });
@@ -485,6 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- HISTORY MODAL LOGIC (UPDATED TO TABLE) ---
     window.showPlayerHistory = (playerId) => {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
