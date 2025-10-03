@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดคู่แบดมินตัน (Final Version)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* --- General Styles --- */
@@ -74,21 +75,33 @@
         .close { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; }
         
-        /* --- History Card Styles --- */
+        /* --- History Table Styles --- */
         .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
-        .history-card { border: 1px solid #e0e0e0; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
-        .history-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .history-card.win { border-left-color: #2ecc71; }
-        .history-card.loss { border-left-color: #e74c3c; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .result { display: flex; align-items: center; font-size: 1.2em; font-weight: bold; }
-        .result-icon { margin-right: 8px; font-size: 1.2em; }
-        .history-card.win .result-text { color: #2ecc71; }
-        .history-card.loss .result-text { color: #e74c3c; }
-        .history-time { font-family: 'Courier New', Courier, monospace; color: #555; font-weight: bold; }
-        .history-details p { margin: 5px 0; font-size: 0.95em; }
-        .history-label { font-weight: bold; color: #34495e; display: inline-block; width: 80px; }
-        .history-date { color: #7f8c8d; font-size: 0.9em; margin-top: 10px !important; }
+        .history-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .history-table th { background-color: #f2f2f2; font-weight: bold; }
+        .history-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .history-table .win { color: #2ecc71; font-weight: bold; }
+        .history-table .loss { color: #e74c3c; font-weight: bold; }
+        
+        /* --- Action Icon Styles --- */
+        .action-icon {
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 1.2em;
+            color: #3498db; /* Default color, like btn-info */
+            transition: color 0.2s, transform 0.2s;
+        }
+        .action-icon:hover {
+            color: #2980b9; /* Darker shade on hover */
+            transform: scale(1.2);
+        }
+        .action-icon.delete-icon {
+            color: #e74c3c; /* Red color for delete, like btn-danger */
+        }
+        .action-icon.delete-icon:hover {
+            color: #c0392b; /* Darker red on hover */
+        }
 
         /* --- Responsive Styles --- */
         @media (max-width: 768px) {
@@ -130,18 +143,17 @@
             /* Style for the 'จัดการ' cell in responsive view */
             #player-table td[data-label="จัดการ"] {
                 text-align: center;
-                padding-left: 15px; /* Override padding for this cell */
+                padding-left: 15px;
                 padding-top: 15px;
                 border-bottom: none;
             }
             #player-table td[data-label="จัดการ"]:before {
-                display: none; /* Hide the label for this cell */
+                display: none;
             }
-            #player-table td[data-label="จัดการ"] button {
-                display: block; /* Make buttons stack vertically */
-                width: 100%;
-                margin-bottom: 8px;
-                box-sizing: border-box;
+            #player-table td[data-label="จัดการ"] .action-icon {
+                display: inline-block;
+                margin: 0 10px;
+                font-size: 1.8em; /* Make them bigger for easier tapping */
             }
         }
 
@@ -338,7 +350,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="ชนะ">${p.wins || 0}</td>
                 <td data-label="แพ้">${p.losses || 0}</td>
                 <td data-label="เวลาทั้งหมด (นาที)">${Math.round((p.totalTimePlayed || 0) / 60)}</td>
-                <td data-label="จัดการ"><button class="btn-info" onclick="showPlayerHistory('${p.id}')">ดูประวัติ</button><button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button></td>
+                <td data-label="จัดการ" class="action-icons-cell">
+                    <span class="action-icon" onclick="showPlayerHistory('${p.id}')" title="ดูประวัติ"><i class="fas fa-eye"></i></span>
+                    <span class="action-icon delete-icon" onclick="deletePlayer('${p.id}')" title="ลบผู้เล่น"><i class="fas fa-trash-alt"></i></span>
+                </td>
             `;
             elements.playerTbody.appendChild(tr);
         });
@@ -417,7 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (availablePlayers.length < playersNeeded) { alert(`จำนวนผู้เล่นที่ว่างไม่พอ! ต้องการอย่างน้อย ${playersNeeded} คน สำหรับ ${numCourts} สนาม (มีผู้เล่นว่าง ${availablePlayers.length} คน)`); return; }
         
-        // *** NEW LOGIC: Sort players by level before pairing ***
         const levelOrder = { 'BG': 1, 'N-': 2, 'N+': 3 };
         availablePlayers.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
         
@@ -478,27 +492,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player.gameHistory.length === 0) {
             elements.modalBody.innerHTML = '<p>ยังไม่มีประวัติการแข่งขัน</p>';
         } else {
-            let historyHtml = '';
+            let historyHtml = `<table class="history-table"><thead><tr><th>วันที่</th><th>คู่ตรงข้าม</th><th>ผล</th><th>เวลา</th></tr></thead><tbody>`;
             const sortedHistory = [...player.gameHistory].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             sortedHistory.forEach(game => {
                 const resultClass = game.result === 'win' ? 'win' : 'loss';
-                const resultIcon = game.result === 'win' ? '✔️' : '❌';
                 const resultText = game.result === 'win' ? 'ชนะ' : 'แพ้';
                 const gameDate = new Date(game.timestamp).toLocaleDateString('th-TH');
                 historyHtml += `
-                    <div class="history-card ${resultClass}">
-                        <div class="history-header">
-                            <div class="result"><span class="result-icon">${resultIcon}</span><span class="result-text">${resultText}</span></div>
-                            <div class="history-time">${formatTime(game.duration)}</div>
-                        </div>
-                        <div class="history-details">
-                            <p><span class="history-label">คู่ของคุณ:</span> ${game.partners.join(', ') || '-'}</p>
-                            <p><span class="history-label">คู่ตรงข้าม:</span> ${game.opponents.join(', ')}</p>
-                            <p class="history-date"><span class="history-label">วันที่:</span> ${gameDate}</p>
-                        </div>
-                    </div>
+                    <tr>
+                        <td>${gameDate}</td>
+                        <td>${game.opponents.join(', ')}</td>
+                        <td class="${resultClass}">${resultText}</td>
+                        <td>${formatTime(game.duration)}</td>
+                    </tr>
                 `;
             });
+            historyHtml += '</tbody></table>';
             elements.modalBody.innerHTML = historyHtml;
         }
         elements.historyModal.style.display = 'block';
