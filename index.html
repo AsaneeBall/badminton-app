@@ -6,11 +6,10 @@
     <title>ระบบจัดคู่แบดมินตัน (Final Version)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* --- General Styles --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: auto; background-color: #fff; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h1, h2, h3, h4 { color: #2c3e50; }
-        h1 { text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; font-size: 2em; }
+        h1 { text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
         .section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 20px; background-color: #fdfdfd; }
         .form-group { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
         input[type="text"], input[type="number"], select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
@@ -32,30 +31,26 @@
         .file-input-label { padding: 10px 20px; background-color: #2ecc71; color: white; border-radius: 5px; cursor: pointer; display: inline-block; transition: background-color 0.3s; }
         .file-input-label:hover { background-color: #27ae60; }
         small { color: #7f8c8d; font-size: 14px; }
-        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
-        .tab.active { border-bottom-color: #3498db; font-weight: bold; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        /* --- Table Styles --- */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
         th { background-color: #f2f2f2; }
-
-        /* --- Match Card Styles --- */
+        .player-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
+        .player-select-list div { padding: 5px; cursor: pointer; border-radius: 3px; }
+        .player-select-list div:hover { background-color: #ecf0f1; }
+        .player-select-list div.selected { background-color: #3498db; color: white; }
         .match-card { border: 1px solid #bdc3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #ffffff; }
         .match-card h4 { margin-top: 0; color: #2980b9; }
         .team { margin-bottom: 10px; }
         .team span { font-weight: bold; }
         .result-form { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
         .timer-display { font-size: 2.5em; font-weight: bold; color: #27ae60; text-align: center; margin: 15px 0; font-family: 'Courier New', Courier, monospace; }
-        .player-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
-        .player-select-list div { padding: 5px; cursor: pointer; border-radius: 3px; }
-        .player-select-list div:hover { background-color: #ecf0f1; }
-        .player-select-list div.selected { background-color: #3498db; color: white; }
+        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom-color: #3498db; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        /* --- Dashboard Styles --- */
+        /* Dashboard Styles */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
         .dashboard-card { background-color: #f9f9f9; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .dashboard-card h3 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; color: #34495e; font-size: 1.2em; }
@@ -68,95 +63,79 @@
         .dashboard-card ul li .player-name { flex-grow: 1; }
         .dashboard-card ul li .stat-value { font-weight: bold; color: #2c3e50; }
 
-        /* --- Modal Styles --- */
+        /* Modal Styles */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 10px; position: relative; }
         .close { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; }
         
-        /* --- History Card Styles --- */
-        .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
-        .history-card { border: 1px solid #e0e0e0; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
-        .history-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .history-card.win { border-left-color: #2ecc71; }
-        .history-card.loss { border-left-color: #e74c3c; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .result { display: flex; align-items: center; font-size: 1.2em; font-weight: bold; }
-        .result-icon { margin-right: 8px; font-size: 1.2em; }
-        .history-card.win .result-text { color: #2ecc71; }
-        .history-card.loss .result-text { color: #e74c3c; }
-        .history-time { font-family: 'Courier New', Courier, monospace; color: #555; font-weight: bold; }
-        .history-details p { margin: 5px 0; font-size: 0.95em; }
-        .history-label { font-weight: bold; color: #34495e; display: inline-block; width: 80px; }
-        .history-date { color: #7f8c8d; font-size: 0.9em; margin-top: 10px !important; }
-
-        /* --- Responsive Styles --- */
-        @media (max-width: 768px) {
-            .container { padding: 15px; }
-            h1 { font-size: 1.8em; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .modal-content { width: 95%; margin: 10% auto; }
-
-            /* Responsive Table */
-            #player-table thead { display: none; }
-            #player-table, #player-table tbody, #player-table tr, #player-table td {
-                display: block;
-                width: 100%;
-            }
-            #player-table tr {
-                margin-bottom: 15px;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                padding: 10px;
-            }
-            #player-table td {
-                text-align: right;
-                padding-left: 50%;
-                position: relative;
-                border: none;
-                border-bottom: 1px solid #eee;
-            }
-            #player-table td:before {
-                content: attr(data-label);
-                position: absolute;
-                left: 15px;
-                width: 45%;
-                padding-right: 10px;
-                text-align: left;
-                font-weight: bold;
-                color: #34495e;
-            }
-            #player-table td:last-child { border-bottom: none; }
-            /* Style for the 'จัดการ' cell in responsive view */
-            #player-table td[data-label="จัดการ"] {
-                text-align: center;
-                padding-left: 15px; /* Override padding for this cell */
-                padding-top: 15px;
-                border-bottom: none;
-            }
-            #player-table td[data-label="จัดการ"]:before {
-                display: none; /* Hide the label for this cell */
-            }
-            #player-table td[data-label="จัดการ"] button {
-                display: block; /* Make buttons stack vertically */
-                width: 100%;
-                margin-bottom: 8px;
-                box-sizing: border-box;
-            }
+        /* History Card Styles */
+        .modal-body {
+            max-height: 70vh; /* 70% of viewport height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-right: 10px; /* Add some space for scrollbar */
         }
-
-        @media (max-width: 576px) {
-            body { padding: 5px; }
-            .container { padding: 10px; }
-            h1 { font-size: 1.5em; }
-            .section { padding: 15px; }
-            .form-group { flex-direction: column; align-items: stretch; }
-            .form-group input, .form-group select, .form-group button, .file-input-label { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
-            .tabs { flex-direction: column; }
-            .tab { text-align: center; }
-            .modal-content { margin: 0; width: 100%; height: 100%; max-width: none; border-radius: 0; padding: 15px; }
-            .modal-body { max-height: 80vh; }
-            .close { font-size: 28px; right: 15px; }
+        .history-card {
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #ccc; /* Default border */
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .history-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .history-card.win {
+            border-left-color: #2ecc71; /* Green for win */
+        }
+        .history-card.loss {
+            border-left-color: #e74c3c; /* Red for loss */
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .result {
+            display: flex;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .result-icon {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        .history-card.win .result-text {
+            color: #2ecc71;
+        }
+        .history-card.loss .result-text {
+            color: #e74c3c;
+        }
+        .history-time {
+            font-family: 'Courier New', Courier, monospace;
+            color: #555;
+            font-weight: bold;
+        }
+        .history-details p {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+        .history-label {
+            font-weight: bold;
+            color: #34495e;
+            display: inline-block;
+            width: 80px; /* Align labels */
+        }
+        .history-date {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 10px !important;
         }
     </style>
 </head>
@@ -242,7 +221,7 @@
             <button id="create-manual-match-btn" class="btn-success" disabled>สร้างแมตช์</button>
         </div>
         <div id="auto-tab" class="tab-content">
-            <h3>สุ่มจับคู่ผู้เล่นที่ยังไม่ได้ลงเล่น (โดยคำนึงถึงระดับ)</h3>
+            <h3>สุ่มจับคู่ผู้เล่นที่ยังไม่ได้ลงเล่น</h3>
             <div class="form-group">
                 <label for="num-courts">จำนวนสนาม:</label>
                 <input type="number" id="num-courts" value="1" min="1" style="width: 80px;">
@@ -323,23 +302,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderPlayers = () => {
         elements.playerTbody.innerHTML = '';
         elements.playerCount.textContent = players.length;
-        if (players.length === 0) { 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="7" style="text-align:center;" data-label="ข้อความ">ยังไม่มีรายชื่อผู้เล่น</td>`;
-            elements.playerTbody.appendChild(tr);
-            return; 
-        }
+        if (players.length === 0) { elements.playerTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">ยังไม่มีรายชื่อผู้เล่น</td></tr>'; return; }
         players.forEach(p => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td data-label="ชื่อ">${p.name}</td>
-                <td data-label="ระดับ">${p.level}</td>
-                <td data-label="🎮 จำนวนเกม">${p.gamesPlayed || 0}</td>
-                <td data-label="ชนะ">${p.wins || 0}</td>
-                <td data-label="แพ้">${p.losses || 0}</td>
-                <td data-label="เวลาทั้งหมด (นาที)">${Math.round((p.totalTimePlayed || 0) / 60)}</td>
-                <td data-label="จัดการ"><button class="btn-info" onclick="showPlayerHistory('${p.id}')">ดูประวัติ</button><button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button></td>
-            `;
+            tr.innerHTML = `<td>${p.name}</td><td>${p.level}</td><td>${p.gamesPlayed || 0}</td><td>${p.wins || 0}</td><td>${p.losses || 0}</td><td>${Math.round((p.totalTimePlayed || 0) / 60)}</td><td><button class="btn-info" onclick="showPlayerHistory('${p.id}')">ดูประวัติ</button><button class="btn-danger" onclick="deletePlayer('${p.id}')">ลบ</button></td>`;
             elements.playerTbody.appendChild(tr);
         });
     };
@@ -414,15 +380,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const numCourts = parseInt(elements.numCourtsInput.value, 10);
         const playersNeeded = numCourts * 4;
         const availablePlayers = players.filter(p => !matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(p.id)));
-
         if (availablePlayers.length < playersNeeded) { alert(`จำนวนผู้เล่นที่ว่างไม่พอ! ต้องการอย่างน้อย ${playersNeeded} คน สำหรับ ${numCourts} สนาม (มีผู้เล่นว่าง ${availablePlayers.length} คน)`); return; }
-        
-        // *** NEW LOGIC: Sort players by level before pairing ***
-        const levelOrder = { 'BG': 1, 'N-': 2, 'N+': 3 };
-        availablePlayers.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
-        
+        const shuffled = [...availablePlayers].sort(() => 0.5 - Math.random());
         for (let i = 0; i < numCourts; i++) {
-            const courtPlayers = availablePlayers.slice(i * 4, (i + 1) * 4);
+            const courtPlayers = shuffled.slice(i * 4, (i + 1) * 4);
             const newMatch = { id: Date.now().toString() + i, court: matches.filter(m => m.status !== 'finished').length + i + 1, teamA: [courtPlayers[0].id, courtPlayers[1].id], teamB: [courtPlayers[2].id, courtPlayers[3].id], status: 'waiting', duration: 0, };
             matches.push(newMatch);
         }
@@ -471,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- HISTORY MODAL LOGIC (UPDATED) ---
     window.showPlayerHistory = (playerId) => {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
@@ -485,10 +447,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultIcon = game.result === 'win' ? '✔️' : '❌';
                 const resultText = game.result === 'win' ? 'ชนะ' : 'แพ้';
                 const gameDate = new Date(game.timestamp).toLocaleDateString('th-TH');
+
                 historyHtml += `
                     <div class="history-card ${resultClass}">
                         <div class="history-header">
-                            <div class="result"><span class="result-icon">${resultIcon}</span><span class="result-text">${resultText}</span></div>
+                            <div class="result">
+                                <span class="result-icon">${resultIcon}</span>
+                                <span class="result-text">${resultText}</span>
+                            </div>
                             <div class="history-time">${formatTime(game.duration)}</div>
                         </div>
                         <div class="history-details">
