@@ -120,10 +120,169 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const SUPABASE_URL = 'https://xoceihdwvluzeedouefd.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvY2VpaGR3dmx1emVlZG91ZWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MTMzMTgsImV4cCI6MjA3NTA4OTMxOH0.28QtEXzU7R8ciZDfzVqS8suvlJcn9raC7rW9LrqNK8k';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ... (โค้ดส่วนที่เหลือเหมือนเดิม เช่น fetchPlayers, renderPlayers, createMatch ฯลฯ)
-});
-</script>
-</body>
-</html>
+    let players = [];
+    let matches = [];
+    let selectedPlayersForManualMatch = [];
+    const activeTimers = {};
+
+    const elements = {
+        addPlayerForm: document.getElementById('add-player-form'),
+        playerNameInput: document.getElementById('player-name-input'),
+        playerLevelInput: document.getElementById('player-level-input'),
+        playerCount: document.getElementById('player-count'),
+        playerTbody: document.getElementById('player-tbody'),
+        manualPlayerList: document.getElementById('manual-player-list'),
+        createManualMatchBtn: document.getElementById('create-manual-match-btn'),
+        generateAutoMatchesBtn: document.getElementById('generate-auto-matches-btn'),
+        numCourtsInput: document.getElementById('num-courts'),
+        matchResultsSection: document.getElementById('match-results-section'),
+        matchesContainer: document.getElementById('matches-container'),
+        tabs: document.querySelectorAll('.tab'),
+        tabContents: document.querySelectorAll('.tab-content'),
+        historyModal: document.getElementById('historyModal'),
+        modalTitle: document.getElementById('modal-title'),
+        modalBody: document.getElementById('modal-body'),
+    };
+
+    const formatTime = (totalSeconds) => {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+    const getPlayerName = (id) => players.find(p => p.id === id)?.name || 'N/A';
+
+    const fetchPlayers = async () => {
+        const { data, error } = await supabase.from('players').select('*');
+        if (error) {
+            console.error("Failed to fetch players:", error);
+            alert('ไม่สามารถดึงข้อมูลผู้เล่นได้!');
+            players = [];
+        } else {
+            players = data;
+        }
+    };
+
+    const savePlayer = async (playerData) => {
+        const { error } = await supabase.from('players').upsert(playerData);
+        if (error) {
+            console.error("Failed to save player:", error);
+            alert('ไม่สามารถบันทึกข้อมูลผู้เล่นได้!');
+            return false;
+        }
+        return true;
+    };
+
+    const renderPlayers = () => {
+        elements.playerTbody.innerHTML = '';
+        elements.playerCount.textContent = players.length;
+        if (players.length === 0) {
+            elements.playerTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">ยังไม่มีรายชื่อผู้เล่น</td></tr>';
+            return;
+        }
+        players.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.name}</td>
+                <td>${p.level}</td>
+                <td>${p.gamesplayed || 0}</td>
+                <td>${p.wins || 0}</td>
+                <td>${p.losses || 0}</td>
+                <td>${Math.round((p.totaltimeplayed || 0) / 60)}</td>
+                <td>
+                    <button class="btn-primary" onclick="showHistory('${p.id}')">ดูประวัติ</button>
+                </td>
+            `;
+            elements.playerTbody.appendChild(tr);
+        });
+    };
+
+    const renderManualPlayerList = () => {
+        const availablePlayers = players.filter(p => !matches.some(m => (m.status === 'waiting' || m.status === 'running') && [...m.teamA, ...m.teamB].includes(p.id)));
+        elements.manualPlayerList.innerHTML = '';
+        if (availablePlayers.length === 0) { elements.manualPlayerList.innerHTML = '<div>ไม่มีผู้เล่นที่ว่าง</div>'; return; }
+        availablePlayers.forEach(p => {
+            const div = document.createElement('div');
+            div.textContent = `${p.name} (${p.level})`;
+            div.dataset.playerId = p.id;
+            div.onclick = () => togglePlayerSelection(p.id);
+            if (selectedPlayersForManualMatch.includes(p.id)) div.classList.add('selected');
+            elements.manualPlayerList.appendChild(div);
+        });
+    };
+
+    const renderMatches = () => {
+        if (matches.length === 0) { elements.matchResultsSection.style.display = 'none'; return; }
+        elements.matchResultsSection.style.display = 'block';
+        elements.matchesContainer.innerHTML = '';
+        matches.forEach(match => {
+            const teamAPlayers = match.teamA.map(id => players.find(p => p.id === id));
+            const teamBPlayers = match.teamB.map(id => players.find(p => p.id === id));
+            const matchCard = document.createElement('div');
+            matchCard.className = 'match-card';
+            let content = `
+                <h4>สนามที่ ${match.court}</h4>
+                <div class="team"><span>ทีม A:</span> ${teamAPlayers.map(p => p.name).join(', ')}</div>
+                <div class="team"><span>ทีม B:</span> ${teamBPlayers.map(p => p.name).join(', ')}</div>
+            `;
+            if (match.status === 'waiting') {
+                content += `<button class="btn-success" onclick="startGame('${match.id}')">เริ่มเกม</button>`;
+            } else if (match.status === 'running') {
+                content += `
+                    <p style="text-align:center; color: #555;">เวลาที่ผ่านไป</p>
+                    <div class="timer-display" id="timer-${match.id}">${formatTime(match.duration)}</div>
+                    <button class="btn-danger" onclick="endGame('${match.id}')">จบเกม</button>
+                `;
+            } else if (match.status === 'finished') {
+                content += `
+                    <p><strong>เวลาที่ใช้:</strong> ${formatTime(match.duration)}</p>
+                    <div class="result-form">
+                        <strong>บันทึกผล:</strong>
+                        <label><input type="radio" name="winner-${match.id}" value="A"> ทีม A ชนะ</label>
+                        <label><input type="radio" name="winner-${match.id}" value="B"> ทีม B ชนะ</label>
+                        <button class="btn-warning" onclick="recordResult('${match.id}')">บันทึกผล</button>
+                        <button class="btn-danger" onclick="deleteMatch('${match.id}')">ลบแมตช์</button>
+                    </div>
+                `;
+            }
+            matchCard.innerHTML = content;
+            elements.matchesContainer.appendChild(matchCard);
+        });
+    };
+
+    const addPlayer = async (name, level) => {
+        const newPlayer = {
+            id: Date.now().toString(),
+            name, level,
+            gamesplayed: 0, wins: 0, losses: 0, totaltimeplayed: 0,
+            gamehistory: []
+        };
+        const success = await savePlayer(newPlayer);
+        if (success) {
+            await fetchPlayers();
+            renderAll();
+        }
+    };
+
+    const togglePlayerSelection = (id) => {
+        const index = selectedPlayersForManualMatch.indexOf(id);
+        if (index > -1) { selectedPlayersForManualMatch.splice(index, 1); } else {
+            if (selectedPlayersForManualMatch.length < 4) { selectedPlayersForManualMatch.push(id); } else { alert('เลือกผู้เล่นครบ 4 คนแล้ว'); }
+        }
+        renderManualPlayerList();
+        elements.createManualMatchBtn.disabled = selectedPlayersForManualMatch.length !== 4;
+    };
+
+    const createManualMatch = () => {
+        if (selectedPlayersForManualMatch.length !== 4) return;
+        const newMatch = { id: Date.now().toString(), court: matches.filter(m => m.status !== 'finished').length + 1, teamA: selectedPlayersForManualMatch.slice(0, 2), teamB: selectedPlayersForManualMatch.slice(2, 4), status: 'waiting', duration: 0 };
+        matches.push(newMatch);
+        selectedPlayersForManualMatch = [];
+        renderAll();
+    };
+
+    const createAutoMatches = () => {
+        const numCourts = parseInt(elements.numCourtsInput.value, 10);
+        const playersNeeded = numCourts * 4;
+       
