@@ -74,14 +74,28 @@
         .close { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 35px; font-weight: bold; cursor: pointer; }
         .close:hover, .close:focus { color: black; text-decoration: none; }
         
-        /* --- History Table Styles (NEW) --- */
+        /* --- History View Styles --- */
         .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 10px; }
-        .history-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        .history-table th, .history-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .history-table th { background-color: #f2f2f2; font-weight: bold; }
-        .history-table tr:nth-child(even) { background-color: #f9f9f9; }
-        .history-table .win { color: #2ecc71; font-weight: bold; }
-        .history-table .loss { color: #e74c3c; font-weight: bold; }
+        .history-summary { background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .history-summary h3 { margin-top: 0; color: #495057; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center; }
+        .summary-item p { margin: 5px 0 0 0; font-size: 1.5em; font-weight: bold; color: #3498db; }
+        .summary-item span { font-size: 0.9em; color: #6c757d; }
+        .toggle-history-btn { display: block; width: 100%; padding: 12px; font-size: 1.1em; margin-top: 20px; }
+        .history-details-container { display: none; } /* Hidden by default */
+        .history-card { border: 1px solid #e0e0e0; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .history-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .history-card.win { border-left-color: #2ecc71; }
+        .history-card.loss { border-left-color: #e74c3c; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .result { display: flex; align-items: center; font-size: 1.2em; font-weight: bold; }
+        .result-icon { margin-right: 8px; font-size: 1.2em; }
+        .history-card.win .result-text { color: #2ecc71; }
+        .history-card.loss .result-text { color: #e74c3c; }
+        .history-time { font-family: 'Courier New', Courier, monospace; color: #555; font-weight: bold; }
+        .history-details p { margin: 5px 0; font-size: 0.95em; }
+        .history-label { font-weight: bold; color: #34495e; display: inline-block; width: 80px; }
+        .history-date { color: #7f8c8d; font-size: 0.9em; margin-top: 10px !important; }
 
         /* --- Responsive Styles --- */
         @media (max-width: 768px) {
@@ -89,6 +103,7 @@
             h1 { font-size: 1.8em; }
             .dashboard-grid { grid-template-columns: 1fr; }
             .modal-content { width: 95%; margin: 10% auto; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
 
             /* Responsive Table */
             #player-table thead { display: none; }
@@ -120,18 +135,15 @@
                 color: #34495e;
             }
             #player-table td:last-child { border-bottom: none; }
-            /* Style for the 'จัดการ' cell in responsive view */
             #player-table td[data-label="จัดการ"] {
                 text-align: center;
-                padding-left: 15px; /* Override padding for this cell */
+                padding-left: 15px;
                 padding-top: 15px;
                 border-bottom: none;
             }
-            #player-table td[data-label="จัดการ"]:before {
-                display: none; /* Hide the label for this cell */
-            }
+            #player-table td[data-label="จัดการ"]:before { display: none; }
             #player-table td[data-label="จัดการ"] button {
-                display: block; /* Make buttons stack vertically */
+                display: block;
                 width: 100%;
                 margin-bottom: 8px;
                 box-sizing: border-box;
@@ -150,6 +162,7 @@
             .modal-content { margin: 0; width: 100%; height: 100%; max-width: none; border-radius: 0; padding: 15px; }
             .modal-body { max-height: 80vh; }
             .close { font-size: 28px; right: 15px; }
+            .summary-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -256,7 +269,10 @@
     <div class="modal-content">
         <span class="close" onclick="closeHistoryModal()">&times;</span>
         <h2 id="modal-title">ประวัติการแข่งขัน</h2>
-        <div id="modal-body"></div>
+        <div id="modal-body">
+            <div id="history-summary-view"></div>
+            <div id="history-details-view" class="history-details-container"></div>
+        </div>
     </div>
 </div>
 
@@ -286,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         matchResultsSection: document.getElementById('match-results-section'), matchesContainer: document.getElementById('matches-container'),
         tabs: document.querySelectorAll('.tab'), tabContents: document.querySelectorAll('.tab-content'),
         historyModal: document.getElementById('historyModal'), modalTitle: document.getElementById('modal-title'), modalBody: document.getElementById('modal-body'),
+        historySummaryView: document.getElementById('history-summary-view'), historyDetailsView: document.getElementById('history-details-view'),
     };
 
     const formatTime = (totalSeconds) => {
@@ -463,33 +480,84 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- HISTORY MODAL LOGIC (UPDATED TO TABLE) ---
+    // --- HISTORY MODAL LOGIC (REVISED) ---
     window.showPlayerHistory = (playerId) => {
         const player = players.find(p => p.id === playerId);
         if (!player) return;
         elements.modalTitle.textContent = `ประวัติการแข่งขันของ ${player.name}`;
+        
+        // Reset views
+        elements.historySummaryView.style.display = 'block';
+        elements.historyDetailsView.style.display = 'none';
+
         if (player.gameHistory.length === 0) {
-            elements.modalBody.innerHTML = '<p>ยังไม่มีประวัติการแข่งขัน</p>';
+            elements.historySummaryView.innerHTML = '<p>ยังไม่มีประวัติการแข่งขัน</p>';
+            elements.historyDetailsView.innerHTML = '';
         } else {
-            let historyHtml = `<table class="history-table"><thead><tr><th>วันที่</th><th>คู่ตรงข้าม</th><th>ผล</th><th>เวลา</th></tr></thead><tbody>`;
+            const totalGames = player.gameHistory.length;
+            const totalWins = player.gameHistory.filter(g => g.result === 'win').length;
+            const totalLosses = player.gameHistory.filter(g => g.result === 'loss').length;
+            const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : 0;
+            const totalTimeSeconds = player.gameHistory.reduce((sum, g) => sum + g.duration, 0);
+            const avgTimeSeconds = totalGames > 0 ? Math.round(totalTimeSeconds / totalGames) : 0;
+
+            // Render Summary
+            elements.historySummaryView.innerHTML = `
+                <div class="history-summary">
+                    <h3>สรุปประวัติ</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item"><span>จำนวนเกม</span><p>${totalGames}</p></div>
+                        <div class="summary-item"><span>ชนะ</span><p>${totalWins}</p></div>
+                        <div class="summary-item"><span>แพ้</span><p>${totalLosses}</p></div>
+                        <div class="summary-item"><span>อัตราชนะ</span><p>${winRate}%</p></div>
+                        <div class="summary-item"><span>เวลาทั้งหมด</span><p>${formatTime(totalTimeSeconds)}</p></div>
+                        <div class="summary-item"><span>เวลาเฉลี่ย/เกม</span><p>${formatTime(avgTimeSeconds)}</p></div>
+                    </div>
+                    <button class="btn-primary toggle-history-btn" onclick="toggleHistoryDetails()">ดูรายละเอียดทั้งหมด</button>
+                </div>
+            `;
+
+            // Render Details (initially hidden)
+            let historyHtml = '';
             const sortedHistory = [...player.gameHistory].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             sortedHistory.forEach(game => {
                 const resultClass = game.result === 'win' ? 'win' : 'loss';
+                const resultIcon = game.result === 'win' ? '✔️' : '❌';
                 const resultText = game.result === 'win' ? 'ชนะ' : 'แพ้';
                 const gameDate = new Date(game.timestamp).toLocaleDateString('th-TH');
                 historyHtml += `
-                    <tr>
-                        <td>${gameDate}</td>
-                        <td>${game.opponents.join(', ')}</td>
-                        <td class="${resultClass}">${resultText}</td>
-                        <td>${formatTime(game.duration)}</td>
-                    </tr>
+                    <div class="history-card ${resultClass}">
+                        <div class="history-header">
+                            <div class="result"><span class="result-icon">${resultIcon}</span><span class="result-text">${resultText}</span></div>
+                            <div class="history-time">${formatTime(game.duration)}</div>
+                        </div>
+                        <div class="history-details">
+                            <p><span class="history-label">คู่ของคุณ:</span> ${game.partners.join(', ') || '-'}</p>
+                            <p><span class="history-label">คู่ตรงข้าม:</span> ${game.opponents.join(', ')}</p>
+                            <p class="history-date"><span class="history-label">วันที่:</span> ${gameDate}</p>
+                        </div>
+                    </div>
                 `;
             });
-            historyHtml += '</tbody></table>';
-            elements.modalBody.innerHTML = historyHtml;
+            elements.historyDetailsView.innerHTML = historyHtml;
         }
         elements.historyModal.style.display = 'block';
+    };
+
+    window.toggleHistoryDetails = () => {
+        const summaryView = elements.historySummaryView;
+        const detailsView = elements.historyDetailsView;
+        const toggleBtn = summaryView.querySelector('.toggle-history-btn');
+
+        if (detailsView.style.display === 'none' || !detailsView.style.display) {
+            // Show details
+            summaryView.style.display = 'none';
+            detailsView.style.display = 'block';
+        } else {
+            // Show summary
+            summaryView.style.display = 'block';
+            detailsView.style.display = 'none';
+        }
     };
 
     window.closeHistoryModal = () => { elements.historyModal.style.display = 'none'; };
